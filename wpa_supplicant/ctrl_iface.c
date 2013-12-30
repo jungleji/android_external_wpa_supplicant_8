@@ -2432,45 +2432,6 @@ static int ctrl_iface_get_capability_auth_alg(int res, char *strict,
 	return pos - buf;
 }
 
-static int ctrl_iface_get_capability_modes(int res, char *strict,
-					      struct wpa_driver_capa *capa,
-					      char *buf, size_t buflen)
-{
-	int ret, first = 1;
-	char *pos, *end;
-	size_t len;
-
-	pos = buf;
-	end = pos + buflen;
-
-	if (res < 0) {
-		if (strict)
-			return 0;
-		len = os_strlcpy(buf, "IBSS AP", buflen);
-		if (len >= buflen)
-			return -1;
-		return len;
-	}
-
-	if (capa->flags & (WPA_DRIVER_FLAGS_IBSS)) {
-		ret = os_snprintf(pos, end - pos, "%sIBSS", first ? "" : " ");
-		if (ret < 0 || ret >= end - pos)
-			return pos - buf;
-		pos += ret;
-		first = 0;
-	}
-
-	if (capa->flags & (WPA_DRIVER_FLAGS_AP)) {
-		ret = os_snprintf(pos, end - pos, "%sAP",
-				  first ? "" : " ");
-		if (ret < 0 || ret >= end - pos)
-			return pos - buf;
-		pos += ret;
-		first = 0;
-	}
-
-	return pos - buf;
-}
 
 static int ctrl_iface_get_capability_channels(struct wpa_supplicant *wpa_s,
 					      char *buf, size_t buflen)
@@ -2505,55 +2466,6 @@ static int ctrl_iface_get_capability_channels(struct wpa_supplicant *wpa_s,
 			if (chnl[i].flag & HOSTAPD_CHAN_DISABLED)
 				continue;
 			ret = os_snprintf(pos, end - pos, " %d", chnl[i].chan);
-			if (ret < 0 || ret >= end - pos)
-				return pos - buf;
-			pos += ret;
-		}
-		ret = os_snprintf(pos, end - pos, "\n");
-		if (ret < 0 || ret >= end - pos)
-			return pos - buf;
-		pos += ret;
-	}
-
-	return pos - buf;
-}
-
-
-static int ctrl_iface_get_capability_freq(struct wpa_supplicant *wpa_s,
-					      char *buf, size_t buflen)
-{
-	struct hostapd_channel_data *chnl;
-	int ret, i, j;
-	char *pos, *end, *hmode;
-
-	pos = buf;
-	end = pos + buflen;
-
-	for (j = 0; j < wpa_s->hw.num_modes; j++) {
-		switch (wpa_s->hw.modes[j].mode) {
-		case HOSTAPD_MODE_IEEE80211B:
-			hmode = "B";
-			break;
-		case HOSTAPD_MODE_IEEE80211G:
-			hmode = "G";
-			break;
-		case HOSTAPD_MODE_IEEE80211A:
-			hmode = "A";
-			break;
-		default:
-			continue;
-		}
-		ret = os_snprintf(pos, end - pos, "Mode[%s] Channels:\n", hmode);
-		if (ret < 0 || ret >= end - pos)
-			return pos - buf;
-		pos += ret;
-		chnl = wpa_s->hw.modes[j].channels;
-		for (i = 0; i < wpa_s->hw.modes[j].num_channels; i++) {
-			if (chnl[i].flag & HOSTAPD_CHAN_DISABLED)
-				continue;
-			ret = os_snprintf(pos, end - pos, " %d = %d MHz%s\n",
-					  chnl[i].chan, chnl[i].freq,
-					  chnl[i].flag & HOSTAPD_CHAN_NO_IBSS ? " (NO_IBSS)" : "");
 			if (ret < 0 || ret >= end - pos)
 				return pos - buf;
 			pos += ret;
@@ -2618,15 +2530,8 @@ static int wpa_supplicant_ctrl_iface_get_capability(
 		return ctrl_iface_get_capability_auth_alg(res, strict, &capa,
 							  buf, buflen);
 
-	if (os_strcmp(field, "modes") == 0)
-		return ctrl_iface_get_capability_modes(res, strict, &capa,
-							  buf, buflen);
-
 	if (os_strcmp(field, "channels") == 0)
 		return ctrl_iface_get_capability_channels(wpa_s, buf, buflen);
-
-	if (os_strcmp(field, "freq") == 0)
-		return ctrl_iface_get_capability_freq(wpa_s, buf, buflen);
 
 	wpa_printf(MSG_DEBUG, "CTRL_IFACE: Unknown GET_CAPABILITY field '%s'",
 		   field);
@@ -3922,6 +3827,13 @@ static int p2p_ctrl_set(struct wpa_supplicant *wpa_s, char *cmd)
 					      atoi(param));
 	}
 
+#ifdef REALTEK_WIFI_VENDOR
+	if (os_strcmp(cmd, "go_intent") == 0) {
+		wpa_s->conf->p2p_go_intent = atoi(param);
+		return 0;
+	}
+#endif
+
 	if (os_strcmp(cmd, "ssid_postfix") == 0) {
 		return p2p_set_ssid_postfix(wpa_s->global->p2p, (u8 *) param,
 					    os_strlen(param));
@@ -4485,6 +4397,9 @@ char * wpa_supplicant_ctrl_iface_process(struct wpa_supplicant *wpa_s,
 	const int reply_size = 4096;
 	int ctrl_rsp = 0;
 	int reply_len;
+
+	if(os_strncmp(buf, "PING", 4) != 0)
+		wpa_printf(MSG_INFO, "[CTRL_IFACE]%s: %s", wpa_s->ifname, buf);
 
 	if (os_strncmp(buf, WPA_CTRL_RSP, os_strlen(WPA_CTRL_RSP)) == 0 ||
 	    os_strncmp(buf, "SET_NETWORK ", 12) == 0) {
@@ -5199,6 +5114,10 @@ char * wpa_supplicant_global_ctrl_iface_process(struct wpa_global *global,
 
 	if (os_strcmp(buf, "PING") == 0)
 		level = MSG_EXCESSIVE;
+
+	if(os_strncmp(buf, "PING", 4) != 0)
+		wpa_printf(MSG_INFO, "[CTRL_IFACE_G]%s", buf);
+	
 	wpa_hexdump_ascii(level, "RX global ctrl_iface",
 			  (const u8 *) buf, os_strlen(buf));
 

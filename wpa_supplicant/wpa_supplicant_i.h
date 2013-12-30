@@ -309,9 +309,7 @@ struct wpa_supplicant {
 	struct wpa_bss *current_bss;
 	int ap_ies_from_associnfo;
 	unsigned int assoc_freq;
-#ifdef LEGACY_STA_EVENTS
-	unsigned int assoc_retries;
-#endif
+
 	/* Selected configuration (based on Beacon/ProbeResp WPA IE) */
 	int pairwise_cipher;
 	int group_cipher;
@@ -556,7 +554,20 @@ struct wpa_supplicant {
 	int p2p_go_intent;
 	int p2p_connect_freq;
 	struct os_time p2p_auto_started;
+
+	/* RTK patched */
+#ifdef CONFIG_ANDROID_4_2_PERSISTENT_IOT
+	u8 android_persistent_iot;
+#endif //CONFIG_ANDROID_4_2_PERSISTENT_IOT
+
 #endif /* CONFIG_P2P */
+
+#ifdef CONFIG_WFD
+	u8 wfd_enable;
+	u8 session_avail;
+	u16 rtsp_ctrlport;
+	u8 wfd_device_type;
+#endif //CONFIG_WFD
 
 	struct wpa_ssid *bgscan_ssid;
 	const struct bgscan_ops *bgscan;

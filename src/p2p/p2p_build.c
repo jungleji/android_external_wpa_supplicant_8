@@ -325,7 +325,6 @@ void p2p_buf_add_p2p_interface(struct wpabuf *buf, struct p2p_data *p2p)
 	wpabuf_put_data(buf, p2p->cfg->dev_addr, ETH_ALEN);
 }
 
-
 static void p2p_add_wps_string(struct wpabuf *buf, enum wps_attribute attr,
 			       const char *val)
 {

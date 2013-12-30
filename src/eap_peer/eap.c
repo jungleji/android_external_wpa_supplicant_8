@@ -348,7 +348,6 @@ SM_STATE(EAP, METHOD)
 {
 	struct wpabuf *eapReqData;
 	struct eap_method_ret ret;
-	int min_len = 1;
 
 	SM_ENTRY(EAP, METHOD);
 	if (sm->m == NULL) {
@@ -357,9 +356,7 @@ SM_STATE(EAP, METHOD)
 	}
 
 	eapReqData = eapol_get_eapReqData(sm);
-	if (sm->m->vendor == EAP_VENDOR_IETF && sm->m->method == EAP_TYPE_LEAP)
-		min_len = 0; /* LEAP uses EAP-Success without payload */
-	if (!eap_hdr_len_valid(eapReqData, min_len))
+	if (!eap_hdr_len_valid(eapReqData, 1))
 		return;
 
 	/*

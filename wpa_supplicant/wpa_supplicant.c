@@ -647,14 +647,9 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 		wpa_supplicant_state_txt(state));
 
 #ifdef ANDROID_P2P
-#ifdef LEGACY_STA_EVENTS
-	if(state == WPA_ASSOCIATED || (state <= WPA_INACTIVE))
-		wpa_s->assoc_retries = 0;
-#else
 	if(state == WPA_ASSOCIATED && wpa_s->current_ssid) {
 		wpa_s->current_ssid->assoc_retry = 0;
 	}
-#endif
 #endif /* ANDROID_P2P */
 
 	if (state != WPA_SCANNING)
@@ -678,6 +673,9 @@ void wpa_supplicant_set_state(struct wpa_supplicant *wpa_s,
 		wpa_drv_set_supp_port(wpa_s, 1);
 #endif /* IEEE8021X_EAPOL */
 		wpa_s->after_wps = 0;
+#ifdef CONFIG_ANDROID_4_2_PERSISTENT_IOT
+		wpa_s->android_persistent_iot = 0;
+#endif //CONFIG_ANDROID_4_2_PERSISTENT_IOT
 #ifdef CONFIG_P2P
 		wpas_p2p_completed(wpa_s);
 #endif /* CONFIG_P2P */
@@ -2610,6 +2608,28 @@ void wpa_supplicant_apply_ht_overrides(
 
 #endif /* CONFIG_HT_OVERRIDES */
 
+#ifdef CONFIG_WFD
+void wfd_set_config_info2driver( struct wpa_supplicant* wpa_s )
+{
+	char		buf[ 256 ];
+
+	wpa_printf(MSG_DEBUG, "WFD: Set config info to driver");
+
+	memset( buf, 0x00, 256 );
+	sprintf( buf, "%d", wpa_s->conf->wfd_tcpport );
+	wpa_drv_driver_cmd(wpa_s,  "WFD-SET-TCPPORT", buf, sizeof(buf));
+	
+	memset( buf, 0x00, 256 );
+	sprintf( buf, "%d", wpa_s->conf->wfd_max_throughput );
+	wpa_drv_driver_cmd(wpa_s,  "WFD-SET-MAXTPUT", buf, sizeof(buf));
+
+	memset( buf, 0x00, 256 );
+	sprintf( buf, "%d", wpa_s->conf->wfd_device_type );
+	wpa_drv_driver_cmd(wpa_s,  "WFD-SET-DEVTYPE", buf, sizeof(buf));
+
+}
+#endif // CONFIG_WFD
+
 
 static int pcsc_reader_init(struct wpa_supplicant *wpa_s)
 {
@@ -2904,6 +2924,9 @@ next_driver:
 	}
 #endif /* CONFIG_P2P */
 
+#ifdef CONFIG_WFD
+	wfd_set_config_info2driver( wpa_s );
+#endif
 	if (wpa_bss_init(wpa_s) < 0)
 		return -1;
 

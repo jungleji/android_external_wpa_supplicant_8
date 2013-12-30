@@ -21,7 +21,7 @@
 #include "utils/list.h"
 #include "common/version.h"
 #include "common/ieee802_11_defs.h"
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(PURE_LINUX)
 #include <cutils/properties.h>
 #endif /* ANDROID */
 
@@ -2417,7 +2417,7 @@ static struct wpa_cli_cmd wpa_cli_commands[] = {
 	  "<<idx> | <bssid>> = get detailed scan result info" },
 	{ "get_capability", wpa_cli_cmd_get_capability, NULL,
 	  cli_cmd_flag_none,
-	  "<eap/pairwise/group/key_mgmt/proto/auth_alg/channels/freq/modes> "
+	  "<eap/pairwise/group/key_mgmt/proto/auth_alg/channels> "
 	  "= get capabilies" },
 	{ "reconfigure", wpa_cli_cmd_reconfigure, NULL,
 	  cli_cmd_flag_none,
@@ -3336,7 +3336,7 @@ static char * wpa_cli_get_default_ifname(void)
 	struct dirent *dent;
 	DIR *dir = opendir(ctrl_iface_dir);
 	if (!dir) {
-#ifdef ANDROID
+#if defined(ANDROID) && !defined(PURE_LINUX)
 		char ifprop[PROPERTY_VALUE_MAX];
 		if (property_get("wifi.interface", ifprop, NULL) != 0) {
 			ifname = os_strdup(ifprop);
