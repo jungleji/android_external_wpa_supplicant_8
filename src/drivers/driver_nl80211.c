@@ -3409,11 +3409,18 @@ static int wiphy_info_handler(struct nl_msg *msg, void *arg)
 	wiphy_info_iface_comb(info, tb[NL80211_ATTR_INTERFACE_COMBINATIONS]);
 	wiphy_info_supp_cmds(info, tb[NL80211_ATTR_SUPPORTED_COMMANDS]);
 
+#ifndef REALTEK_WIFI_VENDOR
 	if (tb[NL80211_ATTR_OFFCHANNEL_TX_OK]) {
 		wpa_printf(MSG_DEBUG, "nl80211: Using driver-based "
 			   "off-channel TX");
 		capa->flags |= WPA_DRIVER_FLAGS_OFFCHANNEL_TX;
 	}
+#endif
+
+#ifdef REALTEK_WIFI_VENDOR
+        wpa_printf(MSG_INFO, "nl80211: no Using driver-based "
+               "off-channel TX");
+#endif
 
 	if (tb[NL80211_ATTR_ROAM_SUPPORT]) {
 		wpa_printf(MSG_DEBUG, "nl80211: Using driver-based roaming");
@@ -3429,7 +3436,7 @@ static int wiphy_info_handler(struct nl_msg *msg, void *arg)
 	wiphy_info_tdls(capa, tb[NL80211_ATTR_TDLS_SUPPORT],
 			tb[NL80211_ATTR_TDLS_EXTERNAL_SETUP]);
 
-#ifndef NO_APSME_ATTR
+#ifndef REALTEK_WIFI_VENDOR
 	if (tb[NL80211_ATTR_DEVICE_AP_SME])
 #endif
 		info->device_ap_sme = 1;
@@ -4615,7 +4622,7 @@ static int wpa_driver_nl80211_scan(struct i802_bss *bss,
 
 		wpa_printf(MSG_DEBUG, "nl80211: P2P probe - mask SuppRates");
 
-		rates = nla_nest_start(msg, NL80211_ATTR_SCAN_SUPP_RATES);
+		rates = nlmsg_alloc();
 		if (rates == NULL)
 			goto nla_put_failure;
 
